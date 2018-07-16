@@ -22,6 +22,18 @@ if [ -n "$CONSUL_BIND_INTERFACE" ]; then
   echo "==> Found address '$CONSUL_BIND_ADDRESS' for interface '$CONSUL_BIND_INTERFACE', setting bind option..."
 fi
 
+CONSUL_ADVERTISE=
+if [ -n "$CONSUL_ADVERTISE_INTERFACE" ]; then
+  CONSUL_ADVERTISE_ADDRESS=$(ip -o -4 addr list $CONSUL_ADVERTISE_INTERFACE | head -n1 | awk '{print $4}' | cut -d/ -f1)
+  if [ -z "$CONSUL_ADVERTISE_ADDRESS" ]; then
+    echo "Could not find IP for interface '$CONSUL_ADVERTISE_INTERFACE', exiting"
+    exit 1
+  fi
+
+  CONSUL_ADVERTISE="-advertise=$CONSUL_ADVERTISE_ADDRESS"
+  echo "==> Found address '$CONSUL_ADVERTISE_ADDRESS' for interface '$CONSUL_ADVERTISE_INTERFACE', setting advertise option..."
+fi
+
 # You can set CONSUL_CLIENT_INTERFACE to the name of the interface you'd like to
 # bind client intefaces (HTTP, DNS, and RPC) to and this will look up the IP and
 # pass the proper -client= option along to Consul.
@@ -64,6 +76,7 @@ if [ "$1" = 'agent' ]; then
         -config-dir="$CONSUL_CONFIG_DIR" \
         $CONSUL_BIND \
         $CONSUL_CLIENT \
+        $CONSUL_ADVERTISE \
         "$@"
 elif [ "$1" = 'version' ]; then
     # This needs a special case because there's no help output.
